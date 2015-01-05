@@ -159,6 +159,19 @@ void RenderScene(void) {
 		glVertex3f (gTable.cushions[i].vertices[1](0), 0.0, gTable.cushions[i].vertices[1](1));
 		glEnd();
 	}
+
+	for(int i=0;i<gTable.parts.num;i++)
+	{
+		glColor3f(1.0,0.0,0.0);
+		glPushMatrix();
+		glTranslatef(gTable.parts.particles[i]->position(0),gTable.parts.particles[i]->position(1),gTable.parts.particles[i]->position(2));
+		#if DRAW_SOLID
+		glutSolidSphere(0.002f,32,32);
+		#else
+		glutWireSphere(0.002f,12,12);
+		#endif
+		glPopMatrix();		
+	}
 	/*
 	glBegin(GL_LINE_LOOP);
 	glVertex3f (TABLE_X, 0.0, -TABLE_Z);

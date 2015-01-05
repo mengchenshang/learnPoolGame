@@ -15,7 +15,7 @@
 #define	SIM_UPDATE_MS	(10)
 #define NUM_BALLS		(7)		
 #define NUM_CUSHIONS	(5)		
-
+#define MAX_PARTICLES	(200)
 /*-----------------------------------------------------------
   plane normals
   -----------------------------------------------------------*/
@@ -72,6 +72,41 @@ public:
 	void HitBall(ball &b);
 };
 
+class particle 
+{
+public:
+	vec3 position;
+	vec3 velocity;
+
+	particle() {position=0;velocity=0;}
+	void update(int ms);
+};
+
+class particleSet 
+{
+public:
+	particle *particles[MAX_PARTICLES];
+	int num;
+
+	particleSet()
+	{
+		for(int i=0;i<MAX_PARTICLES;i++) particles[i] = 0;
+		num=0;
+	}
+
+	~particleSet()
+	{
+		for(int i=0;i<MAX_PARTICLES;i++)
+		{
+			if(particles[i]) delete particles[i];
+		}
+	}
+
+	void AddParticle(const vec3 &pos);
+	void update(int ms);
+};
+
+
 /*-----------------------------------------------------------
   table class
   -----------------------------------------------------------*/
@@ -79,7 +114,9 @@ class table
 {
 public:
 	ball balls[NUM_BALLS];	
-	cushion cushions[NUM_CUSHIONS];	
+	cushion cushions[NUM_CUSHIONS];
+	particleSet parts;
+
 	void SetupCushions(void);
 	void Update(int ms);	
 	bool AnyBallsMoving(void) const;

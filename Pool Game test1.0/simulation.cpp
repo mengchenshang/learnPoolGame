@@ -3,6 +3,9 @@
   -----------------------------------------------------------*/
 #include"stdafx.h"
 #include"simulation.h"
+#include<stdio.h>
+#include<stdlib.h>
+
 
 /*-----------------------------------------------------------
   macros
@@ -156,6 +159,16 @@ void ball::HitPlane(const cushion &c)
 	vec2 delta = -(c.normal * comp);
 	velocity += delta; 
 
+	//make some particles
+	int n = (rand()%4)+3;
+	vec3 pos(position(0),radius/2.0,position(1));
+	vec3 oset(c.normal(0),0.0,c.normal(1));
+	pos+=(oset*radius);
+	for(int i=0;i<n;i++)
+	{
+		gTable.parts.AddParticle(pos);
+	}
+
 /*
 	//assume elastic collision
 	//find plane normal
@@ -194,6 +207,58 @@ void ball::HitBall(ball &b)
 	//find new velocities by adding unchanged parallel component to new perpendicluar component
 	velocity = parallelV + (relDir*perpVNew);
 	b.velocity = parallelV2 + (relDir*perpVNew2);
+
+
+	//make some particles
+	int n = (rand()%5)+5;
+	vec3 pos(position(0),radius/2.0,position(1));
+	vec3 oset(relDir(0),0.0,relDir(1));
+	pos+=(oset*radius);
+	for(int i=0;i<n;i++)
+	{
+		gTable.parts.AddParticle(pos);
+	}
+}
+
+/*-----------------------------------------------------------
+  particle class members
+  -----------------------------------------------------------*/
+void particle::update(int ms)
+{
+	position += (velocity*ms)/1000.0;
+	velocity(1) -= (4.0*ms)/1000.0; //(9.8*ms)/1000.0;
+}
+
+/*-----------------------------------------------------------
+  particle set class members
+  -----------------------------------------------------------*/
+void particleSet::AddParticle(const vec3 &pos)
+{
+	if(num >= MAX_PARTICLES) return;
+	particles[num] = new particle;
+	particles[num]->position = pos;
+
+	particles[num]->velocity(0) = ((rand() % 200)-100)/200.0;
+	particles[num]->velocity(2) = ((rand() % 200)-100)/200.0;
+	particles[num]->velocity(1) = 2.0*((rand() % 100)/100.0);
+
+	num++;
+}
+
+void particleSet::update(int ms)
+{
+	int i=0;
+	while(i<num)
+	{
+		particles[i]->update(ms);
+		if((particles[i]->position(1) < 0.0) && (particles[i]->velocity(1)<0.0))
+		{
+			delete particles[i];
+			particles[i] = particles[num-1];
+			num--;
+		}
+		else i++;
+	}
 }
 
 /*-----------------------------------------------------------
@@ -251,6 +316,13 @@ void table::Update(int ms)
 	
 	//update all balls
 	for(int i=0;i<NUM_BALLS;i++) balls[i].Update(ms);
+
+	//update particles
+	parts.update(ms);
+
+	//make some new particles
+	//vec3 pos(0.0,BALL_RADIUS,0.0);
+	//parts.AddParticle(pos);
 }
 
 bool table::AnyBallsMoving(void) const
