@@ -12,10 +12,12 @@
 /*-----------------------------------------------------------
   globals
   -----------------------------------------------------------*/
+/*
 vec2	gPlaneNormal_Left(1.0,0.0);
 vec2	gPlaneNormal_Top(0.0,1.0);
 vec2	gPlaneNormal_Right(-1.0,0.0);
 vec2	gPlaneNormal_Bottom(0.0,-1.0);
+*/
 
 table gTable;
 
@@ -25,6 +27,27 @@ static const float gRackPositionZ[] = {0.5f,0.0f,(-BALL_RADIUS*3.0f),(-BALL_RADI
 float gCoeffRestitution = 0.5f;
 float gCoeffFriction = 0.03f;
 float gGravityAccn = 9.8f;
+
+
+/*-----------------------------------------------------------
+  cushion class members
+  -----------------------------------------------------------*/
+void cushion::MakeNormal(void)
+{
+	//can do this in 2d
+	vec2 temp = vertices[1]-vertices[0];
+	normal(0) = temp(1);
+	normal(1) = -temp(0);
+	normal.Normalise();
+}
+
+void cushion::MakeCentre(void)
+{
+	centre = vertices[0];
+	centre += vertices[1];
+	centre/=2.0;
+}
+
 /*-----------------------------------------------------------
   ball class members
   -----------------------------------------------------------*/
@@ -77,18 +100,14 @@ void ball::ApplyFrictionForce(int ms)
 	else velocity += velocityChange;
 }
 
-void ball::DoPlaneCollisions(void)
-{
-	//test each plane for collision
-	if(HasHitPlane1()) HitPlane1();
-	if(HasHitPlane2()) HitPlane2();
-	if(HasHitPlane3()) HitPlane3();
-	if(HasHitPlane4()) HitPlane4();
-}
-
 void ball::DoBallCollision(ball &b)
 {
 	if(HasHitBall(b)) HitBall(b);
+}
+
+void ball::DoPlaneCollision(const cushion &b)
+{
+	if(HasHitPlane(b)) HitPlane(b);
 }
 
 void ball::Update(int ms)
@@ -101,33 +120,15 @@ void ball::Update(int ms)
 	if(velocity.Magnitude()<SMALL_VELOCITY) velocity = 0.0;
 }
 
-bool ball::HasHitPlane1(void) const
+bool ball::HasHitPlane(const cushion &c) const
 {
 	//if moving away from plane, cannot hit
-	if(velocity(0) >= 0.0) return false;
+	if(velocity.Dot(c.normal) >= 0.0) return false;
+	
 	//if in front of plane, then have not hit
-	if((position(0)-radius) > (-TABLE_X)) return false;
-	return true;
-}
-
-bool ball::HasHitPlane2(void) const
-{
-	if(velocity(1) >= 0.0) return false;
-	if((position(1)-radius) > (-TABLE_Z)) return false;
-	return true;
-}
-
-bool ball::HasHitPlane3(void) const
-{
-	if(velocity(0) <= 0.0) return false;
-	if((position(0)+radius) < (TABLE_X)) return false;
-	return true;
-}
-
-bool ball::HasHitPlane4(void) const
-{
-	if(velocity(1) <= 0.0) return false;
-	if((position(1)+radius) < (TABLE_Z)) return false;
+	vec2 relPos = position - c.vertices[0];
+	double sep = relPos.Dot(c.normal);
+	if(sep > radius) return false;
 	return true;
 }
 
@@ -148,8 +149,14 @@ bool ball::HasHitBall(const ball &b) const
 	return true;
 }
 
-void ball::HitPlane1(void)
+void ball::HitPlane(const cushion &c)
 {
+	//reverse velocity component perpendicular to plane  
+	double comp = velocity.Dot(c.normal) * (1.0+gCoeffRestitution);
+	vec2 delta = -(c.normal * comp);
+	velocity += delta; 
+
+/*
 	//assume elastic collision
 	//find plane normal
 	vec2 planeNorm = gPlaneNormal_Left;
@@ -161,30 +168,7 @@ void ball::HitPlane1(void)
 	//reverse perpendicular component
 	//parallel component is unchanged
 	velocity = parallel + (-perp)*gCoeffRestitution;
-}
-
-void ball::HitPlane2(void)
-{
-	vec2 planeNorm = gPlaneNormal_Top;
-	vec2 perp = planeNorm*(velocity.Dot(planeNorm));
-	vec2 parallel = velocity - perp;
-	velocity = parallel + (-perp)*gCoeffRestitution;
-}
-
-void ball::HitPlane3(void)
-{
-	vec2 planeNorm = gPlaneNormal_Right;
-	vec2 perp = planeNorm*(velocity.Dot(planeNorm));
-	vec2 parallel = velocity - perp;
-	velocity = parallel + (-perp)*gCoeffRestitution;
-}
-
-void ball::HitPlane4(void)
-{
-	vec2 planeNorm = gPlaneNormal_Bottom;
-	vec2 perp = planeNorm*(velocity.Dot(planeNorm));
-	vec2 parallel = velocity - perp;
-	velocity = parallel + (-perp)*gCoeffRestitution;
+*/
 }
 
 void ball::HitBall(ball &b)
@@ -215,14 +199,50 @@ void ball::HitBall(ball &b)
 /*-----------------------------------------------------------
   table class members
   -----------------------------------------------------------*/
+void table::SetupCushions(void)
+{
+	cushions[0].vertices[0](0) = -TABLE_X; 
+	cushions[0].vertices[0](1) = -TABLE_Z; 
+	cushions[0].vertices[1](0) = -TABLE_X; 
+	cushions[0].vertices[1](1) = TABLE_Z; 
+
+	cushions[1].vertices[0](0) = -TABLE_X; 
+	cushions[1].vertices[0](1) = TABLE_Z; 
+	cushions[1].vertices[1](0) = TABLE_X; 
+	cushions[1].vertices[1](1) = TABLE_Z; 
+
+	cushions[2].vertices[0](0) = TABLE_X; 
+	cushions[2].vertices[0](1) = TABLE_Z; 
+	cushions[2].vertices[1](0) = TABLE_X; 
+	cushions[2].vertices[1](1) = -TABLE_Z + 0.3; 
+
+	cushions[3].vertices[0](0) = TABLE_X; 
+	cushions[3].vertices[0](1) = -TABLE_Z + 0.3; 
+	cushions[3].vertices[1](0) = TABLE_X - 0.3; 
+	cushions[3].vertices[1](1) = -TABLE_Z; 
+
+	cushions[4].vertices[0](0) = TABLE_X - 0.3; 
+	cushions[4].vertices[0](1) = -TABLE_Z; 
+	cushions[4].vertices[1](0) = -TABLE_X; 
+	cushions[4].vertices[1](1) = -TABLE_Z; 
+
+	for(int i=0;i<NUM_CUSHIONS;i++)
+	{
+		cushions[i].MakeCentre();
+		cushions[i].MakeNormal();
+	}
+}
+
 void table::Update(int ms)
 {
-	//check for collisions with planes, for all balls
-	for(int i=0;i<NUM_BALLS;i++) balls[i].DoPlaneCollisions();
-	
-	//check for collisions between pairs of balls
+	//check for collisions for each ball
 	for(int i=0;i<NUM_BALLS;i++) 
 	{
+		for(int j=0;j<NUM_CUSHIONS;j++)
+		{
+			balls[i].DoPlaneCollision(cushions[j]);
+		}
+
 		for(int j=(i+1);j<NUM_BALLS;j++) 
 		{
 			balls[i].DoBallCollision(balls[j]);

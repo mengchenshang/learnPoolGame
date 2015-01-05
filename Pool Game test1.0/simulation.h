@@ -8,19 +8,38 @@
   -----------------------------------------------------------*/
 #define TABLE_X			(0.6f) 
 #define TABLE_Z			(1.2f)
+#define TABLE_Y			(0.1f)
 #define BALL_RADIUS		(0.05f)
 #define BALL_MASS		(0.1f)
 #define TWO_PI			(6.2832f)
 #define	SIM_UPDATE_MS	(10)
 #define NUM_BALLS		(7)		
+#define NUM_CUSHIONS	(5)		
 
 /*-----------------------------------------------------------
   plane normals
   -----------------------------------------------------------*/
+/*
 extern vec2	gPlaneNormal_Left;
 extern vec2	gPlaneNormal_Top;
 extern vec2	gPlaneNormal_Right;
 extern vec2	gPlaneNormal_Bottom;
+*/
+
+
+/*-----------------------------------------------------------
+  cushion class
+  -----------------------------------------------------------*/
+class cushion
+{
+public:
+	vec2	vertices[2]; //2d
+	vec2	centre;
+	vec2	normal;
+
+	void MakeNormal(void);
+	void MakeCentre(void);
+};
 
 /*-----------------------------------------------------------
   ball class
@@ -42,20 +61,14 @@ public:
 	void Reset(void);
 	void ApplyImpulse(vec2 imp);
 	void ApplyFrictionForce(int ms);
-	void DoPlaneCollisions(void);
+	void DoPlaneCollision(const cushion &c);
 	void DoBallCollision(ball &b);
 	void Update(int ms);
 	
-	bool HasHitPlane1(void) const;
-	bool HasHitPlane2(void) const;
-	bool HasHitPlane3(void) const;
-	bool HasHitPlane4(void) const;
+	bool HasHitPlane(const cushion &c) const;
 	bool HasHitBall(const ball &b) const;
 
-	void HitPlane1(void);
-	void HitPlane2(void);
-	void HitPlane3(void);
-	void HitPlane4(void);
+	void HitPlane(const cushion &c);
 	void HitBall(ball &b);
 };
 
@@ -66,6 +79,8 @@ class table
 {
 public:
 	ball balls[NUM_BALLS];	
+	cushion cushions[NUM_CUSHIONS];	
+	void SetupCushions(void);
 	void Update(int ms);	
 	bool AnyBallsMoving(void) const;
 };

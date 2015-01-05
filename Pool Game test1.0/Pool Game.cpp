@@ -150,14 +150,16 @@ void RenderScene(void) {
 	glColor3f(1.0,1.0,1.0);
 
 	//draw the table
-	glPushMatrix();
-	
-	glBegin(GL_LINE_LOOP);
-	glVertex3f (-TABLE_X, 0.0, -TABLE_Z);
-	glVertex3f (-TABLE_X, 0.1, -TABLE_Z);
-	glVertex3f (-TABLE_X, 0.1, TABLE_Z);
-	glVertex3f (-TABLE_X, 0.0, TABLE_Z);
-	glEnd();
+	for(int i=0;i<NUM_CUSHIONS;i++)
+	{	
+		glBegin(GL_LINE_LOOP);
+		glVertex3f (gTable.cushions[i].vertices[0](0), 0.0, gTable.cushions[i].vertices[0](1));
+		glVertex3f (gTable.cushions[i].vertices[0](0), 0.1, gTable.cushions[i].vertices[0](1));
+		glVertex3f (gTable.cushions[i].vertices[1](0), 0.1, gTable.cushions[i].vertices[1](1));
+		glVertex3f (gTable.cushions[i].vertices[1](0), 0.0, gTable.cushions[i].vertices[1](1));
+		glEnd();
+	}
+	/*
 	glBegin(GL_LINE_LOOP);
 	glVertex3f (TABLE_X, 0.0, -TABLE_Z);
 	glVertex3f (TABLE_X, 0.1, -TABLE_Z);
@@ -176,6 +178,7 @@ void RenderScene(void) {
 	glVertex3f (-TABLE_X, 0.1, TABLE_Z);
 	glVertex3f (-TABLE_X, 0.0, TABLE_Z);
 	glEnd();
+	*/
 
 	//draw the cue
 	if(gDoCue)
@@ -190,7 +193,7 @@ void RenderScene(void) {
 		glEnd();
 	}
 
-	glPopMatrix();
+	//glPopMatrix();
 
 	glFlush();
 	glutSwapBuffers();
@@ -422,6 +425,8 @@ void UpdateScene(int ms)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	gTable.SetupCushions();
+
 	glutInit(&argc, ((char **)argv));
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE| GLUT_RGBA);
 	glutInitWindowPosition(0,0);
